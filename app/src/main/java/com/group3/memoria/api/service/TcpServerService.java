@@ -1,7 +1,6 @@
 package com.group3.memoria.api.service;
 
 import jakarta.annotation.PostConstruct;
-import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Async;
 
@@ -9,13 +8,13 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-@Service
+// @Service
 public class TcpServerService {
 
     private static final int SERVER_PORT = 8080; // Example for other services
 
-    @Async
-    @PostConstruct
+    // @Async
+    // @PostConstruct
     public static void startTcpServer() {
         new Thread(() -> {
             try (ServerSocket serverSocket = new ServerSocket(SERVER_PORT)) {

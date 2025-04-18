@@ -9,15 +9,15 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-@Service
+// @Service
 public class UdpDiscoveryService {
 
     private static final int DISCOVERY_PORT = 8888;
     private static final String DISCOVERY_MESSAGE = "DISCOVER_SERVER";
     private static final int HTTP_SERVER_PORT = 8080; // Port of your HTTP server
 
-    @Async
-    @PostConstruct
+    // @Async
+    // @PostConstruct
     public void startUdpServer() {
         new Thread(() -> {
             try (DatagramSocket socket = new DatagramSocket(DISCOVERY_PORT)) {
