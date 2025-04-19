@@ -17,8 +17,8 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
     }
 
-    @PostMapping("/login")
-    public String login(@RequestBody AuthRequest request) {
+    @PostMapping("/token")
+    public String getToken(@RequestBody AuthRequest request) {
         // dummy validation
         if (clientId.equals(request.getUsername()) && clientSecret.equals(request.getPassword())) {
             return jwtUtil.generateToken(request.getUsername());
