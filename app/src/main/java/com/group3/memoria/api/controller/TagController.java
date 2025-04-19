@@ -1,26 +1,93 @@
 package com.group3.memoria.api.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.reactive.function.client.WebClient;
+
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import jakarta.annotation.PostConstruct;
+
 
 @RestController
+@RequestMapping("/upload-photo")
 public class TagController {
-    @PostMapping("/api/tag")
-    public List<String> getTags(@RequestParam("image") MultipartFile file) {
+
+    @Value("${imagga.api.key}")
+    private String apiKey;
+
+    @Value("${imagga.api.secret}")
+    private String apiSecret;
+
+    private WebClient webClient;
+
+    @PostConstruct
+    public void init() {
+        this.webClient = WebClient.builder()
+                .baseUrl("https://api.imagga.com/v2")
+                .defaultHeaders(headers -> headers.setBasicAuth(apiKey, apiSecret))
+                .build();
+    }
+
+    @PostMapping
+    public ResponseEntity<List<String>> getTags(@RequestParam("image") MultipartFile image) {
         try {
-            // Example: Process the image and return mock data
-            List<String> result = Arrays.asList(
-                "Detected Object: Dog",
-                "Confidence: 90%",
-                "Color: Brown",
-                "Size: Large"
-            );
-            return result;
+            Resource fileResource = new ByteArrayResource(image.getBytes()) {
+                @Override
+                public String getFilename() {
+                    return image.getOriginalFilename();
+                }
+            };
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("image", fileResource);
+
+            Map response = webClient.post()
+                    .uri("/tags")
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+
+            List<Map<String, Object>> tagsRaw = (List<Map<String, Object>>)
+                    ((Map<String, Object>) response.get("result")).get("tags");
+
+            List<String> tags = new ArrayList<>();
+            for (Map<String, Object> tagEntry : tagsRaw) {
+                Map<String, String> tag = (Map<String, String>) tagEntry.get("tag");
+
+
+                Number confidenceNumber = (Number) tagEntry.get("confidence");
+                double confidence = confidenceNumber.doubleValue();
+
+                if (confidence >= 30.0) {
+                    tags.add(tag.get("en"));
+                }
+            }
+
+            return ResponseEntity.ok(tags);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to process image: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(List.of("Error processing image: " + e.getMessage()));
         }
     }
 }
+
+
