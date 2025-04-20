@@ -81,7 +81,7 @@ public class TagController {
                 double confidence = ((Number) tagEntry.get("confidence")).doubleValue();
                 String tagText = tag.get("en");
 
-                if (confidence >= 60.0) {
+                if (confidence >= 90.0) {
                     highConfidenceTags.add(tagText);
                 }
 
