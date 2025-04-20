@@ -66,26 +66,52 @@ public class TagController {
                     .bodyToMono(Map.class)
                     .block();
 
-            List<Map<String, Object>> tagsRaw = (List<Map<String, Object>>)
-                    ((Map<String, Object>) response.get("result")).get("tags");
-
-            List<String> tags = new ArrayList<>();
-            for (Map<String, Object> tagEntry : tagsRaw) {
-                Map<String, String> tag = (Map<String, String>) tagEntry.get("tag");
-
-
-                Number confidenceNumber = (Number) tagEntry.get("confidence");
-                double confidence = confidenceNumber.doubleValue();
-
-                if (confidence >= 30.0) {
-                    tags.add(tag.get("en"));
-                }
+            Map<String, Object> result = (Map<String, Object>) response.get("result");
+            if (result == null || !result.containsKey("tags")) {
+                return ResponseEntity.ok(List.of("No tags found"));
             }
 
-            return ResponseEntity.ok(tags);
+            List<Map<String, Object>> tagsRaw = (List<Map<String, Object>>) result.get("tags");
+
+            List<String> highConfidenceTags = new ArrayList<>();
+            List<TagScore> allTags = new ArrayList<>();
+
+            for (Map<String, Object> tagEntry : tagsRaw) {
+                Map<String, String> tag = (Map<String, String>) tagEntry.get("tag");
+                double confidence = ((Number) tagEntry.get("confidence")).doubleValue();
+                String tagText = tag.get("en");
+
+                if (confidence >= 60.0) {
+                    highConfidenceTags.add(tagText);
+                }
+
+                allTags.add(new TagScore(tagText, confidence));
+            }
+
+            if (!highConfidenceTags.isEmpty()) {
+                return ResponseEntity.ok(highConfidenceTags);
+            } else {
+                allTags.sort((a, b) -> Double.compare(b.confidence, a.confidence));
+                List<String> top3 = new ArrayList<>();
+                for (int i = 0; i < Math.min(3, allTags.size()); i++) {
+                    top3.add(allTags.get(i).name);
+                }
+                return ResponseEntity.ok(top3);
+            }
+
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(List.of("Error processing image: " + e.getMessage()));
+        }
+    }
+
+    private static class TagScore {
+        String name;
+        double confidence;
+
+        TagScore(String name, double confidence) {
+            this.name = name;
+            this.confidence = confidence;
         }
     }
 }
