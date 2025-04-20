@@ -21,7 +21,11 @@ public class AuthController {
     public String getToken(@RequestBody AuthRequest request) {
         // dummy validation
         if (clientId.equals(request.getUsername()) && clientSecret.equals(request.getPassword())) {
-            return jwtUtil.generateToken(request.getUsername());
+            String jwtToken = jwtUtil.generateToken(request.getUsername());
+            System.out.println(jwtToken);
+            return jwtToken;
+        } else {
+            System.out.println(request.getUsername());
         }
         throw new RuntimeException("Invalid credentials");
     }
